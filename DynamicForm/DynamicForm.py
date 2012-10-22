@@ -5,10 +5,15 @@
 
 from WebElements.All import Factory
 from WebElements import UITemplate
-
+from WebElements.HiddenInputs import HiddenValue
 import PageControls
 from RequestHandler import RequestHandler
 from WebElements.Resources import ResourceFile, ScriptContainer
+
+try:
+    from django.core.context_processors import csrf
+except ImportError:
+    csrf = False
 
 
 class DynamicForm(RequestHandler):
@@ -18,6 +23,8 @@ class DynamicForm(RequestHandler):
     template = UITemplate.fromSHPAML("> document")
     elementFactory = Factory
     formatted = False
+    if csrf:
+        sharedFields = ('csrfmiddlewaretoken', )
 
     def renderResponse(self, request):
         """
@@ -32,8 +39,12 @@ class DynamicForm(RequestHandler):
         for resourceFile in self.resourceFiles(request):
             document.addChildElement(ResourceFile()).setProperty("file", resourceFile)
 
+        if csrf:
+            token = document.body.addChildElement(HiddenValue('csrfmiddlewaretoken'))
+            token.setValue(csrf(request.native)['csrf_token'])
         document.body += self.mainControl
         document.body += request.response.scripts
+
         self.modifyDocument(document, request)
 
         return document.toHtml(formatted=self.formatted, request=request)

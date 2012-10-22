@@ -315,5 +315,5 @@ class Request(object):
                 fields[key] = value[0]
 
         return cls(fields, djangoRequest.body, djangoRequest.COOKIES, djangoRequest.META, djangoRequest.FILES,
-                   djangoRequest.path, djangoRequest.method, djangoRequest)
+                   djangoRequest.path, djangoRequest.method, user=djangoRequest.user, native=djangoRequest)
 

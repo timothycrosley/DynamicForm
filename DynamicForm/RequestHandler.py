@@ -35,9 +35,9 @@ class RequestHandler(object):
 
         self.initScripts.append("DynamicForm.handlers['%s'] = {};" % self.accessor)
         self.initScripts.append("DynamicForm.handlers['%s'].grabFields = %s;" %
-                                (self.accessor, json.dumps(list(grabFields))))
+                                (self.accessor, json.dumps(list(self.grabFields))))
         self.initScripts.append("DynamicForm.handlers['%s'].grabForms = %s;" %
-                                (self.accessor, json.dumps(list(grabForms))))
+                                (self.accessor, json.dumps(list(self.grabForms))))
 
         self._registerChildren()
 
