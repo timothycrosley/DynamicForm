@@ -156,5 +156,14 @@ class TemplateControl(ElementControl):
     """
     template = UITemplate.Template("empty")
 
+    def __init__(self, id=None, name=None, parent=None, parentHandler=None, initScripts=None, **kwargs):
+        ElementControl.__init__(self, id, name, parent, parentHandler, initScripts, **kwargs)
+
+        templateDefinition = TemplateElement(template=self.template, factory=self.elementFactory)
+
+        for control in templateDefinition.allChildren():
+            if isinstance(control, PageControl):
+                self.registerControl(control.__class__)
+
     def buildUI(self, request):
         return TemplateElement(template=self.template, factory=self.elementFactory)

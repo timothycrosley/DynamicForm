@@ -71,21 +71,25 @@ RestClient.makeRequest = function(url, method, params, callbackFunction)
     return xmlhttp;
 }
 
+// Makes a GET rest call against the provided URL
 RestClient.get = function(url, params, callbackFunction)
 {
     return RestClient.makeRequest(url, "GET", params, callbackFunction);
 }
 
+// Makes a POST rest call against the provided URL
 RestClient.post = function(url, params, callbackFunction)
 {
     return RestClient.makeRequest(url, "POST", params, callbackFunction);
 }
 
+// Makes a PUT rest call against the provided URL
 RestClient.put = function(url, params, callbackFunction)
 {
     return RestClient.makeRequest(url, "PUT", params, callbackFunction);
 }
 
+// Makes a DELETE rest call against the provided URL
 RestClient.delete = function(url, params, callbackFunction)
 {
     return RestClient.makeRequest(url, "DELETE", params, callbackFunction);
@@ -98,11 +102,13 @@ DynamicForm.handlers = {};
 DynamicForm.loading = {};
 DynamicForm.baseURL = '';
 
+// Returns a serialized string representation of a single control
 DynamicForm.serializeControl = function(pageControl)
 {
     return DynamicForm.serializeControls([pageControl])
 }
 
+// Quickly and efficiently serializes one or more controls returning a string representation
 DynamicForm.serializeControls = function(pageControls)
 {
     var pageControls = WebElements.map(pageControls, WebElements.get);
@@ -126,6 +132,7 @@ DynamicForm.serializeControls = function(pageControls)
     return serializedHandlers.concat([WebElements.serializeElements(WebElements.sortUnique(fields))]).join("&");
 }
 
+// Stops the loading of a control
 DynamicForm.abortLoading = function(view)
 {
     if(DynamicForm.loading.hasOwnProperty(view) && DynamicForm.loading[view] != null)
@@ -137,6 +144,7 @@ DynamicForm.abortLoading = function(view)
     }
 }
 
+// Requests one or many controls on a page
 DynamicForm._requestPageControls = function(pageControls, method, silent, params, timeout)
 {
     if(typeof(pageControls) != typeof([]))
@@ -186,47 +194,7 @@ DynamicForm._requestPageControls = function(pageControls, method, silent, params
                                                 function(response){DynamicForm._applyUpdates(response, pageControls)});
 }
 
-// DynamicForm._requestPageControls = function(pageControl, method, silent, params, timeout)
-// {
-//     var pageControl = WebElements.get(pageControl);
-//     var requestHandler = pageControl.attributes.handler.value;
-//     if(!method){method = "GET";}
-//     if(!params){params = '';}
-//
-//     DynamicForm.abortLoading(pageControl.id);
-//
-//     if(timeout)
-//     {
-//         timeoutMethod = setTimeout("DynamicForm." + method.toLowerCase() + "('" + pageControl.id + "', " + silent +
-//                                    ", '" + params + "');", timeout);
-//         DynamicForm.loading[pageControl.id] = {'timeout':timeoutMethod,
-//                                      'abort':function(){clearTimeout(DynamicForm.loading[pageControl.id]['timeout']);}};
-//         return;
-//     }
-//
-//     var params = ["requestHandler=" + encodeURIComponent(requestHandler),
-//                   DynamicForm.serializeControl(pageControl), params].join("&");
-//     if(!silent)
-//     {
-//         var loader = WebElements.get(pageControl.id + ":Loading");
-//         var contentHeight = pageControl.offsetHeight;
-//         console.log(contentHeight);
-//
-//         WebElements.hide(pageControl);
-//         WebElements.show(loader);
-//
-//         if(contentHeight > loader.offsetHeight)
-//         {
-//             var half = String((contentHeight - loader.offsetHeight) / 2) + "px";
-//             loader.style.marginTop = half;
-//             loader.style.marginBottom = half;
-//         }
-//     }
-//
-//     DynamicForm.loading[pageControl.id] = RestClient.makeRequest(DynamicForm.baseURL, method, params,
-//                                                 function(response){DynamicForm._applyUpdate(response, pageControl)});
-// }
-
+// Applies the servers updated HTML
 DynamicForm._applyUpdates = function(xmlhttp, pageControls)
 {
     var pageControls = WebElements.map(pageControls, WebElements.get);
@@ -282,21 +250,25 @@ DynamicForm._applyUpdates = function(xmlhttp, pageControls)
     }
 }
 
+// Asks the server to provide a new version of the control
 DynamicForm.get = function(pageControl, silent, params, timeout)
 {
     return DynamicForm._requestPageControls(pageControl, "GET", silent, params, timeout);
 }
 
+// Posts the current version of the control to the server for it to respond
 DynamicForm.post = function(pageControl, silent, params, timeout)
 {
     return DynamicForm._requestPageControls(pageControl, "POST", silent, params, timeout);
 }
 
+// Puts the current version of the control to the server for it to respond
 DynamicForm.put = function(pageControl, silent, params, timeout)
 {
     return DynamicForm._requestPageControls(pageControl, "PUT", silent, params, timeout);
 }
 
+// Request a delete of the current version of the control for the server to respond to
 DynamicForm.delete = function(pageControl, silent, params, timeout)
 {
     return DynamicForm._requestPageControls(pageControl, "DELETE", silent, params, timeout);

@@ -45,6 +45,11 @@ class RequestHandler(object):
             for handler in self.allHandlers():
                 handler.makeConnections()
 
+            for handler in self.childHandlers.values():
+                for name, value in self.childHandlers.iteritems():
+                    if value != handler:
+                        setattr(handler, name, value)
+
     def __str__(self):
         return " ".join([string[0].upper() + string[1:] for string in self.accessor.split(".")])
 
@@ -52,9 +57,16 @@ class RequestHandler(object):
         for attribute in (getattr(self, attribute, None) for attribute in dir(self) if attribute not in ('__class__',)):
             if type(attribute) == type and \
                issubclass(attribute, RequestHandler) and not attribute.__name__.startswith("Abstract"):
-                instance = attribute(parentHandler=self, initScripts=self.initScripts)
-                self.childHandlers[instance.baseName] = instance
-                self.__setattr__(instance.baseName, instance)
+                self.registerControl(attribute)
+
+    def registerControl(self, controlClass):
+        """
+            Registers a control, returning the registered instance
+        """
+        instance = controlClass(parentHandler=self, initScripts=self.initScripts)
+        self.childHandlers[instance.baseName] = instance
+        self.__setattr__(instance.baseName, instance)
+        return instance
 
     @classmethod
     def djangoView(cls):
@@ -95,12 +107,48 @@ class RequestHandler(object):
             return handler.handleRequest(request, handlers)
         else:
             try:
+                if not self.canView(request) or (request.method != "GET" and not self.canEdit(request)):
+                    request.response.status = HTTP.Response.Status.UNAUTHORIZED
+                    request.response.content = self.renderUnauthorized(request)
                 request.response.content = self.renderResponse(request)
             except Exception, e:
                 request.response.status = HTTP.Response.Status.INTERNAL_SERVER_ERROR
                 request.response.content = self.renderInternalError(request, e)
 
         return request.response
+
+    def canView(self, request):
+        """
+            Returns true if the request's user is allowed to view this content
+        """
+        if self.parentHandler:
+            return self.parentHandler.canView(request)
+        else:
+            return self._canView(request)
+
+    def _canView(self, request):
+        """
+            This method should be overwritten to specify if this control is viewable
+        """
+        return True
+
+
+    def canEdit(self, request):
+        """
+            Returns true if the request's user is allowed to edit this content
+        """
+        if self.parentHandler:
+            return self.parentHandler.canEdit(request)
+        if not self.canView(request):
+            return False
+
+        return self._canEdit(request)
+
+    def _canEdit(self, request):
+        """
+            This method should be overwritten to specify if this control is editable
+        """
+        return True
 
     def allHandlers(self, handlerList=None):
         """
@@ -138,3 +186,11 @@ class RequestHandler(object):
         """
         return "Internal Server Error: " + str(exception)
 
+    def renderUnauthorized(self, request):
+        """
+            Defines the response when the user is not authorized to view a section
+        """
+        if request.method == "GET":
+            return "Unauthorized Request: You are not authorized to view this information"
+        else:
+            return "Unauthorized Request: You are not authorized to edit this information"
