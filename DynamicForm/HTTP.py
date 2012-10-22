@@ -2,7 +2,13 @@
     Basic classes that define HTTP requests and responses
 """
 
+import urllib
 from collections import namedtuple
+
+try:
+    from django.http import HttpResponse as djangoResponse
+except ImportError, e:
+    djangoResponse = None
 
 Cookie = namedtuple('Cookie', ['key', 'value', 'maxAge', 'expires', 'path', 'domain', 'secure', 'httpOnly'])
 
@@ -15,7 +21,7 @@ class FieldDict(dict):
         """
             Overwrites dict behavior to return empty string by default - to be more consistent with browser behavior
         """
-        return self.get(field, default)
+        return dict.get(self, field, default)
 
     def getSet(self, field):
         """
@@ -73,46 +79,26 @@ class FieldDict(dict):
 
         return fieldDict
 
-
-class Request(object):
-    """
-        Defines the abstract concept of an HTTP request
-    """
-    __slots__ = ('fields', 'body', 'cookies', 'meta', 'files', 'path', 'method', 'data', 'native', 'user')
-
-    def __init__(self, fields=None, body="", cookies=None, meta=None, files=None, path=None, method=None, user=None,
-                 native=None):
-        self.fields = FieldDict(fields) or FieldDict()
-        self.body = body
-        self.cookies = FieldDict(cookies) or FieldDict()
-        self.meta = FieldDict(meta) or FieldDict()
-        self.files = FieldDict(files) or FieldDict()
-        self.path = path or ""
-        self.user = user
-        self.native = native
-
-     def isAjax(self):
+    def queryString(self):
         """
-            Returns true if the request is explicely flagged as using an XMLHttpRequest
+            Returns a queryString version of the dictionary - useful for making URL GET requests
         """
-        return self.meta.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
+        params = []
+        for key, value in self.iteritems():
+            if type(value) in (list, set, tuple):
+                for instance in value:
+                    params.append("%s=%s" % (key, urllib.quote(instance)))
+            else:
+                params.append("%s=%s" % (key, urllib.quote(value)))
 
-    @classmethod
-    def fromDjangoRequest(cls, djangoRequest):
-        """
-            Creates a new request object from a Django request object
-        """
-        fields = dict(djangoRequest.POST)
-        fields.update(dict(djangoRequest.GET))
-        return cls(fields, djangoRequest.body, djangoRequest.COOKIES, djangoRequest.META, djangoRequest.FILES,
-                   djangoRequest.path, djangoRequest.method, djangoRequest)
+        return "&".join(params)
 
 
 class Response(object):
     """
         Defines the abstract concept of an HTTP response
     """
-    __slots__ = ('content', 'status', 'contentType', '_headers', '_cookies')
+    __slots__ = ('content', 'status', 'contentType', '_headers', 'cookies', 'scripts', 'charset')
 
     class Status(object):
         """
@@ -120,23 +106,23 @@ class Response(object):
 
             see: http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
         """
-        #Informational
+        # Informational
         CONTINUE = 100
         SWITCHING_PROTOCOLS = 101
         PROCESSING = 102
 
-        #Success
+        # Success
         OK = 200
         CREATED = 201
         ACCEPTED = 202
-        NON_AUTHORITAVE = 203 #Information returned but might may not be owned by server
+        NON_AUTHORITAVE = 203 # Information returned but might may not be owned by server
         NO_CONTENT = 204
-        RESET_CONTENT = 205 #The requester made a reset response and it was successful
+        RESET_CONTENT = 205 # The requester made a reset response and it was successful
         PARTIAL_CONTENT = 206
         MULTI_STATUS = 207
         ALREADY_REPORTED = 208
 
-        #Redirection
+        # Redirection
         MULTIPLE_CHOICES = 300
         MOVED = 301
         FOUND = 302
@@ -146,7 +132,7 @@ class Response(object):
         TEMPORARY_REDIRECT = 307
         PERMANENT_REDIRECT = 308
 
-        #Client error
+        # Client error
         BAD_REQUEST = 400
         UNAUTHORIZED = 401
         PAYMENT_REQUIRED = 402
@@ -177,7 +163,7 @@ class Response(object):
         HEADER_FIELDS_TOO_LARGE = 431
         UNAVAILABLE_FOR_LEGAL_REASONS = 451
 
-        #Server error
+        # Server error
         INTERNAL_SERVER_ERROR = 500
         NOT_IMPLEMENTED = 501
         BAD_GATEWAY = 502
@@ -191,52 +177,143 @@ class Response(object):
         NOT_EXTENDED = 510
         NETWORK_AUTHENTICATION_REQUIRED = 511
 
-    def __init__(self, content='', contentType="text/html;charset=UTF-8", status=None, isDynamic=True):
+    class ContentType(object):
+        """
+            A mapping of common content types used in web applications
+
+            see: http://en.wikipedia.org/wiki/Internet_media_type
+        """
+        TEXT = "text/plain"
+        HTML = "text/html"
+        JSON = "application/json"
+        CSS = "text/css"
+        CSV = "text/csv"
+        JAVASCRIPT = "text/javascript"
+        VCARD = "text/vcard"
+        XML = "text/xml"
+
+    def __init__(self, content='', contentType=None, status=None, charset="UTF-8", isDynamic=True):
         self.content = content
-        self.contentType = contentType
+        self.contentType = contentType or self.ContentType.HTML
+        self.charset = charset
         self.status = status or self.Status.OK
+        self.cookies = FieldDict({})
         self._headers = {}
-        self._cookies = {}
-        if isDynamic: #If content is dynamically generated (and it almost always is) don't let the browser cache
+        self.scripts = None
+        if isDynamic: # If content is dynamically generated (and it almost always is) don't let the browser cache
             self['Cache-Control'] = 'no-cache, must-revalidate'
             self['Pragma'] = 'no-cache'
-            self['Expires'] = 'Thu, 01 DEC 1994 01:00:00 GMT' #Some time in the past
+            self['Expires'] = 'Thu, 01 DEC 1994 01:00:00 GMT' # Some time in the past
 
-        def get(self, header, default=None):
-            """
-                Returns header value if it exists or default
-            """
-            return self._headers.get(header, default)
+    def get(self, header, default=None):
+        """
+            Returns header value if it exists or default
+        """
+        return self._headers.get(header, default)
 
-        def __setitem__(self, header, value):
-            self._headers[header] = value
+    def setCookie(self, key, value='', maxAge=None, expires=None, path='/', domain=None, secure=False,
+                    httpOnly=False):
+        """
+            Sets a cookie
+        """
+        newCookie = Cookie(key, value, maxAge, expires, path, domain, secure, httpOnly)
+        self.cookies[key] = newCookie
+        return newCookie
 
-        def __delitem__(self, header):
-            try:
-                del self._headers[header]
-            except KeyError:
-                pass
+    def __setitem__(self, header, value):
+        """
+            Implement __setItem__ to support dict like setting of headers right on the request object
+        """
+        self._headers[header] = value
 
-        def __getitem__(self, header):
-            return self._headers[header]
+    def __delitem__(self, header):
+        """
+            Implement __delItem__ to support dict like deleting of headers right on the request object
+        """
+        try:
+            del self._headers[header]
+        except KeyError:
+            pass
 
-        def setCookie(self, key, value='', maxAge=None, expires=None, path='/', domain=None, secure=False,
-                      httpOnly=False):
-            """
-                Sets a cookie
-            """
-            self._cookies[key] = Cookie(key, value, maxAge, expires, path, domain, secure, httpOnly)
+    def __getitem__(self, header):
+        """
+            Implement __getItem__ to support dict like deleting of headers on the request object
+        """
+        return self._headers[header]
 
-        def toDjangoResponse(self, cls):
-            """
-                Converts the given response to the Django HTTPResponse object
-                cls - the django HTTPResponse class or compatible object type
-            """
-            djangoResponse = cls(self.content, self.contentType, self.status)
-            for header, value in self.iteritems():
-                djangoResponse[header] = value
+    def serialize(self):
+        """
+            Returns a plain dictionary of the response for serialization purposes.
+        """
+        return {'responseText':self.content, 'status':self.status, 'contentType':self.contentType}
 
-            for cookie in self._cookies.itervalues():
-                djangoResponse.set_cookie(*cookie)
+    def toDjangoResponse(self, cls=djangoResponse):
+        """
+            Converts the given response to the Django HTTPResponse object
+            cls - the django HTTPResponse class or compatible object type
+        """
+        djangoResponse = cls(self.content, self.contentType + ";charset=" + self.charset, self.status)
+        for header, value in self._headers.iteritems():
+            djangoResponse[header] = value
 
-            return djangoResponse
+        for cookie in self.cookies.itervalues():
+            djangoResponse.set_cookie(*cookie)
+
+        return djangoResponse
+
+
+class Request(object):
+    """
+        Defines the abstract concept of an HTTP request
+    """
+    __slots__ = ('fields', 'body', 'cookies', 'meta', 'files', 'path', 'method', 'data', 'native', 'user', 'response')
+
+    def __init__(self, fields=None, body="", cookies=None, meta=None, files=None, path=None, method=None, user=None,
+                 native=None):
+        self.fields = FieldDict(fields or {})
+        self.body = body
+        self.cookies = FieldDict(cookies or {})
+        self.meta = FieldDict(meta or {})
+        self.files = FieldDict(files or {})
+        self.path = path or ""
+        self.user = user
+        self.native = native
+        self.method = method
+        self.response = Response()
+
+    def copy(self):
+        """
+            Returns a smart copy of the request object
+        """
+        copy =  self.__class__(fields=self.fields.copy(), body=self.body, cookies=self.cookies.copy(),
+                               meta=self.meta.copy(), files=self.files.copy(), path=self.path, method=self.method,
+                               user=self.user, native=self.native)
+        copy.response.content = self.response.content
+        copy.response.status = self.response.status
+        copy.response.contentType = self.response.contentType
+        copy.response._headers = self.response._headers.copy()
+        copy.response.cookies = self.response.cookies.copy()
+        copy.response.scripts = self.response.scripts
+        copy.response.charset = self.response.charset
+        return copy
+
+    def isAjax(self):
+        """
+            Returns true if the request is explicitly flagged as using an XMLHttpRequest
+        """
+        return self.meta.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
+
+    @classmethod
+    def fromDjangoRequest(cls, djangoRequest):
+        """
+            Creates a new request object from a Django request object
+        """
+        fields = dict(djangoRequest.POST)
+        fields.update(dict(djangoRequest.GET))
+        for key, value in fields.iteritems():
+            if type(value) in (tuple, list) and len(value) == 1:
+                fields[key] = value[0]
+
+        return cls(fields, djangoRequest.body, djangoRequest.COOKIES, djangoRequest.META, djangoRequest.FILES,
+                   djangoRequest.path, djangoRequest.method, djangoRequest)
+
