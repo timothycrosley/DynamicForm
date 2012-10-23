@@ -6,6 +6,7 @@ import HTTP
 from RequestHandler import RequestHandler
 from WebElements import UITemplate
 from WebElements.All import Factory
+from WebElements import Base
 from WebElements.Base import WebElement, TemplateElement
 from WebElements.Layout import Center, Horizontal
 from WebElements.Display import Image, Empty, Label
@@ -61,7 +62,7 @@ class PageControl(RequestHandler, WebElement):
 
             layout = self.addChildElement(Horizontal())
             layout.addClass("WContent")
-            layout.addChildElement(Image(src="images/throbber.gif"))
+            layout.addChildElement(Image(src=Base.IMAGES_URL + "throbber.gif"))
             label = layout.addChildElement(Label())
             label.setText(self.parent.loadingText())
 
