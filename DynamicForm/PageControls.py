@@ -2,6 +2,8 @@
     Defines the most basic PageControls that can be subclassed to control sections of a page
 """
 
+import re
+
 import HTTP
 from RequestHandler import RequestHandler
 from WebElements import UITemplate
@@ -9,7 +11,7 @@ from WebElements.All import Factory
 from WebElements import Base
 from WebElements.Base import WebElement, TemplateElement
 from WebElements.Layout import Center, Horizontal
-from WebElements.Display import Image, Empty, Label
+from WebElements.Display import Image, Empty, Label, FormError
 from WebElements.Resources import ScriptContainer
 from WebElements import ClientSide
 
@@ -137,10 +139,77 @@ class ElementControl(PageControl):
     def setUIData(self, ui, request):
         return
 
+
+    def valid(self, ui, request):
+        """
+            The default validation method for all non get requests if validate(requestType) is not defined
+        """
+        return True
+
+    def validPost(self, ui, request):
+        """
+            Returns true if the post data is valid
+        """
+        return self.valid(ui, request)
+
+    def validGet(self, ui, request):
+        """
+            Returns true if the get data is valid - defaults to True should very rarely be overridden
+        """
+        return True
+
+    def validDelete(self, ui, request):
+        """
+            Returns true if the delete data is valid
+        """
+        return self.valid(ui, request)
+
+    def validPut(self, ui, request):
+        """
+            Returns true if the put data is valid
+        """
+        return self.valid(ui, request)
+
+    def processPost(self, ui, request):
+        """
+            Override to define the processing specific to a post
+        """
+        pass
+
+    def processGet(self, ui, request):
+        """
+            Override to define the processing specific to a get
+        """
+        pass
+
+    def processDelete(self, ui, request):
+        """
+            Override to define the processing specific to a delete
+        """
+        pass
+
+    def processPut(self, ui, request):
+        """
+            Override to define the processing specific to a put
+        """
+        pass
+
     def renderResponse(self, request):
         ui = self.buildUI(request)
         self.initUI(ui, request)
+
+        if request.method == "GET" and self.validGet(ui, request):
+            self.processGet(ui, request)
+        elif request.method == "POST" and self.validPost(ui, request):
+            self.processPost(ui, request)
+        elif request.method == "DELETE" and self.validDelete(ui, request):
+            self.processDelete(ui, request)
+        elif request.method == "PUT" and self.validPut(ui, request):
+            self.processPut(ui, request)
+
         self.setUIData(ui, request)
+        if not self.canEdit(request):
+            ui.setEditable(False)
         if not request.response.scripts:
             request.response.scripts = ScriptContainer()
             ui.setScriptContainer(request.response.scripts)

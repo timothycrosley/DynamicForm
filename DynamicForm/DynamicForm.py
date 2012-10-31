@@ -1,5 +1,5 @@
 """
-    Defines the the DynamicForm concept (a page made up entirely of page controls / requests handlers so that
+    Defines the DynamicForm concept (a page made up entirely of page controls / requests handlers so that
     any part of the page can be updated independently
 """
 
