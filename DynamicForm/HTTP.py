@@ -1,13 +1,32 @@
-"""
-    Basic classes that define HTTP requests and responses
-"""
+'''
+    HTTP.py
+
+    Basic Classes that work together to define HTTP requests and responses.
+
+    Copyright (C) 2013  Timothy Edmund Crosley
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 2
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+'''
 
 import urllib
 from collections import namedtuple
+from WebElements.MultiplePythonSupport import *
 
 try:
     from django.http import HttpResponse as djangoResponse
-except ImportError, e:
+except ImportError as e:
     djangoResponse = None
 
 Cookie = namedtuple('Cookie', ['key', 'value', 'maxAge', 'expires', 'path', 'domain', 'secure', 'httpOnly'])
@@ -84,7 +103,7 @@ class FieldDict(dict):
             Returns a queryString version of the dictionary - useful for making URL GET requests
         """
         params = []
-        for key, value in self.iteritems():
+        for key, value in iteritems(self):
             if type(value) in (list, set, tuple):
                 for instance in value:
                     params.append("%s=%s" % (key, urllib.quote(instance)))
@@ -253,10 +272,10 @@ class Response(object):
             cls - the django HTTPResponse class or compatible object type
         """
         djangoResponse = cls(self.content, self.contentType + ";charset=" + self.charset, self.status)
-        for header, value in self._headers.iteritems():
+        for header, value in iteritems(self._headers):
             djangoResponse[header] = value
 
-        for cookie in self.cookies.itervalues():
+        for cookie in itervalues(self.cookies):
             djangoResponse.set_cookie(*cookie)
 
         return djangoResponse
@@ -310,7 +329,7 @@ class Request(object):
         """
         fields = dict(djangoRequest.POST)
         fields.update(dict(djangoRequest.GET))
-        for key, value in fields.iteritems():
+        for key, value in iteritems(fields):
             if type(value) in (tuple, list) and len(value) == 1:
                 fields[key] = value[0]
 

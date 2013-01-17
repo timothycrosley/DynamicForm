@@ -1,11 +1,31 @@
-"""
-    Defines the basic concept of a request handler
-"""
+'''
+    RequestHandler.py
 
+    Defines the most basic concept of a request handler (an object that accepts a request and returns a response)
+
+    Copyright (C) 2013  Timothy Edmund Crosley
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 2
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+'''
+
+import traceback
 import types
 import json
 
-import HTTP
+from . import HTTP
+from WebElements.MultiplePythonSupport import *
 
 class RequestHandler(object):
     """
@@ -46,7 +66,7 @@ class RequestHandler(object):
                 handler.makeConnections()
 
             for handler in self.childHandlers.values():
-                for name, value in self.childHandlers.iteritems():
+                for name, value in iteritems(self.childHandlers):
                     if value != handler:
                         setattr(handler, name, value)
 
@@ -111,7 +131,7 @@ class RequestHandler(object):
                     request.response.status = HTTP.Response.Status.UNAUTHORIZED
                     request.response.content = self.renderUnauthorized(request)
                 request.response.content = self.renderResponse(request)
-            except Exception, e:
+            except Exception as e:
                 request.response.status = HTTP.Response.Status.INTERNAL_SERVER_ERROR
                 request.response.content = self.renderInternalError(request, e)
 
@@ -184,7 +204,7 @@ class RequestHandler(object):
         """
             Defines the response when an exception is thrown during handling (should be overridden by concrete handlers)
         """
-        return "Internal Server Error: " + str(exception)
+        return "Internal Server Error: %s\n%s" % (str(exception), str(traceback.format_exc()))
 
     def renderUnauthorized(self, request):
         """

@@ -1,17 +1,35 @@
-"""
+'''
+    PageControls.py
+
     Defines the most basic PageControls that can be subclassed to control sections of a page
-"""
+
+    Copyright (C) 2013  Timothy Edmund Crosley
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 2
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+'''
 
 import re
 
-import HTTP
-from RequestHandler import RequestHandler
+from . import HTTP
+from .RequestHandler import RequestHandler
 from WebElements import UITemplate
 from WebElements.All import Factory
 from WebElements import Base
 from WebElements.Base import WebElement, TemplateElement
-from WebElements.Layout import Center, Horizontal
-from WebElements.Display import Image, Empty, Label, FormError
+from WebElements.Layout import Center, Horizontal, Flow
+from WebElements.Display import Image, Label, FormError
 from WebElements.Resources import ScriptContainer
 from WebElements import ClientSide
 
@@ -79,7 +97,7 @@ class PageControl(RequestHandler, WebElement):
         if not self._loading:
             loading = self.Loading(self.id + ":Loading", self.name + ":Loading", parent=self)
             loading.hide()
-            self.__class__._loading = loading.toHtml()
+            self.__class__._loading = loading.toHTML()
 
         self.initScripts.append(self.setScriptContainer(ScriptContainer()).content())
 
@@ -89,11 +107,11 @@ class PageControl(RequestHandler, WebElement):
         """
         return "Loading %s..." % (str(self), )
 
-    def toHtml(self, formatted=False, *args, **kwargs):
+    def toHTML(self, formatted=False, *args, **kwargs):
         """
-            Override toHtml to draw loading section in addition to controller placement
+            Override toHTML to draw loading section in addition to controller placement
         """
-        return "".join([self._loading, WebElement.toHtml(self, formatted, *args, **kwargs)])
+        return "".join([self._loading, WebElement.toHTML(self, formatted, *args, **kwargs)])
 
     def buildElement(self, className, id=None, name=None, parent=None, properties=None, scriptContainer=None):
         """
@@ -131,14 +149,13 @@ class ElementControl(PageControl):
         Defines a PageControl that is rendered using WebElements
     """
     def buildUI(self, request):
-        return Empty()
+        return Flow()
 
     def initUI(self, ui, request):
         return
 
     def setUIData(self, ui, request):
         return
-
 
     def valid(self, ui, request):
         """
@@ -213,10 +230,10 @@ class ElementControl(PageControl):
         if not request.response.scripts:
             request.response.scripts = ScriptContainer()
             ui.setScriptContainer(request.response.scripts)
-            return ui.toHtml(request=request) + request.response.scripts.toHtml(request=request)
+            return ui.toHTML(request=request) + request.response.scripts.toHTML(request=request)
         else:
             ui.setScriptContainer(request.response.scripts)
-            return ui.toHtml(request=request)
+            return ui.toHTML(request=request)
 
 
 class TemplateControl(ElementControl):

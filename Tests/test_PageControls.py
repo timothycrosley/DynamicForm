@@ -1,6 +1,24 @@
-"""
+'''
+    test_PageControls.py
+
     Tests that the base PageControls function as expected
-"""
+
+    Copyright (C) 2013  Timothy Edmund Crosley
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 2
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+'''
 
 from WebElements.Base import WebElement
 from WebElements.Display import Label
@@ -38,9 +56,9 @@ class TestPageControl(object):
         assert "testControl:Loading" in self.testControl._loading
         assert self.testControl.loadingText() in self.testControl._loading
 
-    def test_toHtml(self):
-        assert self.testControl.content() in self.testControl.toHtml()
-        assert self.testControl._loading in self.testControl.toHtml()
+    def test_toHTML(self):
+        assert self.testControl.content() in self.testControl.toHTML()
+        assert self.testControl._loading in self.testControl.toHTML()
 
     def test_content(self):
         assert "Heyyyy!" in self.testControl.content()
@@ -72,7 +90,7 @@ class TestElementControl(object):
 
     def test_buildUI(self):
         assert type(self.testControl.buildUI(HTTP.Request())) == Label
-        assert self.testControl.buildUI(HTTP.Request()).toHtml() in self.testControl.renderResponse(HTTP.Request())
+        assert self.testControl.buildUI(HTTP.Request()).toHTML() in self.testControl.renderResponse(HTTP.Request())
 
     def test_initUI(self):
         class MyElementControl(BasicElementControl):
@@ -110,6 +128,6 @@ class TestTemplateControl(object):
         ui = self.testControl.buildUI(HTTP.Request())
         assert isinstance(ui.label, Label)
         assert ui.label.text() == "TemplateLabel"
-        assert ui.toHtml() in self.testControl.renderResponse(HTTP.Request())
+        assert ui.toHTML() in self.testControl.renderResponse(HTTP.Request())
 
 
