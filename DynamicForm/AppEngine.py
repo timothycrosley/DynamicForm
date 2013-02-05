@@ -39,5 +39,5 @@ class DynamicForm(webapp2.RequestHandler, BaseDynamicForm):
         return response.toAppEngineResponse(self.response)
 
     def trace(self):
-        response = self.handleRequest(HTTP.Request.fromAppEngineRequest(self.request, "T"))
+        response = self.handleRequest(HTTP.Request.fromAppEngineRequest(self.request, "TRACE"))
         return response.toAppEngineResponse(self.response)
