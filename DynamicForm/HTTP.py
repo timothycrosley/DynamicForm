@@ -388,7 +388,7 @@ class Request(object):
             Creates a new request object from a Django request object
         """
         if djangoRequest.method in ['PUT', 'DELETE']:
-            oldMethod = request.method
+            oldMethod = djangoRequest.method
             djangoRequest.method = "POST"
             djangoRequest._load_post_and_files()
             djangoRequest.method = oldMethod
