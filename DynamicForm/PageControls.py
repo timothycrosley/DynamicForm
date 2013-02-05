@@ -48,25 +48,25 @@ class PageControl(RequestHandler, WebElement):
     class ClientSide(WebElement.ClientSide):
 
         def getAll(self, controls, silent=False, params=None, timeout=None):
-            return ClientSide.call("DynamicForm.get", controls, silent, params, timout)
+            return ClientSide.call("DynamicForm.get", controls, silent, params, timeout)
 
         def get(self, silent=False, params=None, timeout=None):
             return ClientSide.call("DynamicForm.get", self, silent, params, timeout)
 
         def postAll(self, controls, silent=False, params=None, timeout=None):
-            return ClientSide.call("DynamicForm.post", controls, silent, params, timout)
+            return ClientSide.call("DynamicForm.post", controls, silent, params, timeout)
 
         def post(self, silent=False, params=None, timeout=None):
             return ClientSide.call("DynamicForm.post", self, silent, params, timeout)
 
         def putAll(self, controls, silent=False, params=None, timeout=None):
-            return ClientSide.call("DynamicForm.put", controls, silent, params, timout)
+            return ClientSide.call("DynamicForm.put", controls, silent, params, timeout)
 
         def put(self, silent=False, params=None, timeout=None):
             return ClientSide.call("DynamicForm.put", self, silent, params, timeout)
 
         def delteAll(self, controls, silent=False, params=None, timeout=None):
-            return ClientSide.call("DynamicForm.get", controls, silent, params, timout)
+            return ClientSide.call("DynamicForm.get", controls, silent, params, timeout)
 
         def delete(self, silent=False, params=None, timeout=None):
             return ClientSide.call("DynamicForm.delete", self, silent, params, timeout)
