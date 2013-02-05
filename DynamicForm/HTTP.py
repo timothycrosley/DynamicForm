@@ -29,7 +29,39 @@ try:
 except ImportError as e:
     djangoResponse = None
 
-Cookie = namedtuple('Cookie', ['key', 'value', 'maxAge', 'expires', 'path', 'domain', 'secure', 'httpOnly'])
+try:
+    from google.appengine.api import users as appEngineUsers
+except ImportError as e:
+    appEngineUsers = None
+
+
+class Cookie(namedtuple('Cookie', ['key', 'value', 'maxAge', 'expires', 'path', 'domain', 'secure', 'httpOnly'])):
+    """
+        Defines an HTTP cookie object to be used for storing basic data on the client side during a single session.
+    """
+    __slots__ = ()
+
+    def toHeader(self):
+        """
+            Converts the cookie data into that expected by the Set-Cookie header.
+        """
+        value = ["%s=%s" % (self.key, self.value)]
+
+        if self.maxAge:
+            value.append("Max-Age=%s" % (self.maxAge, ))
+        if self.expires:
+            value.append("Expires=%s" % (self.expires, ))
+        if self.path:
+            value.append("Path=%s" % (self.path, ))
+        if self.domain:
+            value.append("Domain=%s" % (self.domain, ))
+        if self.secure:
+            value.append("Secure")
+        if self.httpOnly:
+            value.append("HttpOnly")
+
+        return ";".join(value)
+
 
 class FieldDict(dict):
     """
@@ -266,6 +298,20 @@ class Response(object):
         """
         return {'responseText':self.content, 'status':self.status, 'contentType':self.contentType}
 
+    def toAppEngineResponse(self, response):
+        """
+            Passes the contents of this response into the given app engine response object
+        """
+        response.out.write(self.content)
+        response.set_status(self.status)
+        response.headers.add('Content-Type', self.contentType + ";charset=" + self.charset)
+
+        for header, value in iteritems(self._headers):
+            response.headers.add(header, value)
+
+        for cookie in itervalues(self.cookies):
+            response.headers.add('Set-Cookie', cookie.toHeader())
+
     def toDjangoResponse(self, cls=djangoResponse):
         """
             Converts the given response to the Django HTTPResponse object
@@ -321,6 +367,20 @@ class Request(object):
             Returns true if the request is explicitly flagged as using an XMLHttpRequest
         """
         return self.meta.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
+
+    @classmethod
+    def fromAppEngineRequest(cls, appEngineRequest, method="GET"):
+        fields = {}
+        for name in appEngineRequest.arguments():
+            value = appEngineRequest.get_all(name)
+            if len(value) == 1:
+                value = value[0]
+            fields[name] = value
+
+        return cls(fields, appEngineRequest.body, dict(appEngineRequest.cookies), None, None, appEngineRequest.path,
+                   method, user=appEngineUsers.get_current_user(), native=appEngineRequest)
+
+
 
     @classmethod
     def fromDjangoRequest(cls, djangoRequest):

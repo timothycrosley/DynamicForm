@@ -57,6 +57,11 @@ RestClient.makeRequest = function(url, method, params, callbackFunction)
         xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         xmlhttp.setRequestHeader("Content-length", params.length);
         xmlhttp.setRequestHeader("Connection", "close");
+        csrfToken = WebElements.get('csrfmiddlewaretoken');
+        if(csrfToken)
+        {
+            xmlhttp.setRequestHeader('X-CSRFToken', csrfToken);
+        }
     }
 
     xmlhttp.onreadystatechange =
