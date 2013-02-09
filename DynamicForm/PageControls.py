@@ -43,7 +43,7 @@ class PageControl(RequestHandler, WebElement):
     autoLoad = True
     autoReload = False
     elementFactory = Factory
-    _loading = None
+    __loading = None
 
     class ClientSide(WebElement.ClientSide):
 
@@ -94,7 +94,7 @@ class PageControl(RequestHandler, WebElement):
         WebElement.__init__(self, id=id or self.accessor, name=name, parent=None, **kwargs)
         self.attributes['handler'] = self.accessor
 
-        if not self._loading:
+        if not self.__loading:
             loading = self.Loading(self.id + ":Loading", self.name + ":Loading", parent=self)
             loading.hide()
             self.__class__._loading = loading.toHTML()
@@ -111,7 +111,7 @@ class PageControl(RequestHandler, WebElement):
         """
             Override toHTML to draw loading section in addition to controller placement
         """
-        return "".join([self._loading, WebElement.toHTML(self, formatted, *args, **kwargs)])
+        return "".join([self.__loading, WebElement.toHTML(self, formatted, *args, **kwargs)])
 
     def buildElement(self, className, id=None, name=None, parent=None, properties=None, scriptContainer=None):
         """
