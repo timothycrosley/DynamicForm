@@ -21,12 +21,15 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 '''
 
+from itertools import chain
+
 from WebElements.All import Factory
 from WebElements import UITemplate
 from WebElements.HiddenInputs import HiddenValue
 from . import PageControls
 from .RequestHandler import RequestHandler
 from WebElements.Resources import ResourceFile, ScriptContainer
+from WebElements.Base import Settings
 
 try:
     from django.core.context_processors import csrf
@@ -41,6 +44,7 @@ class DynamicForm(RequestHandler):
     template = UITemplate.fromSHPAML("> document")
     elementFactory = Factory
     formatted = False
+    resourceFiles = ('js/WebBot.js', 'stylesheets/Site.css')
     if csrf:
         sharedFields = ('csrfmiddlewaretoken', )
 
@@ -53,9 +57,9 @@ class DynamicForm(RequestHandler):
         request.response.scripts.addScript("\n".join(self.initScripts))
         document.setScriptContainer(request.response.scripts)
         document.setProperty('title', self.title(request))
-        document.addChildElement(ResourceFile()).setProperty("file", self.favicon(request))
-        for resourceFile in self.resourceFiles(request):
-            document.addChildElement(ResourceFile()).setProperty("file", resourceFile)
+        document.addChildElement(ResourceFile()).setProperty("file", Settings.STATIC_URL + self.favicon(request))
+        for resourceFile in set(self.requestResourceFiles(request) + self.resourceFiles):
+            document.addChildElement(ResourceFile()).setProperty("file", Settings.STATIC_URL + resourceFile)
 
         if csrf:
             token = document.body.addChildElement(HiddenValue('csrfmiddlewaretoken'))
@@ -87,11 +91,11 @@ class DynamicForm(RequestHandler):
         """
         return "images/favicon.png"
 
-    def resourceFiles(self, request):
+    def requestResourceFiles(self, request):
         """
-            Returns the resource files that should be loaded with this page - override this method to change
+            Returns the resource files that should be loaded with this page by request - override this to change
         """
-        return ['javascript/CommonJavascript.js', 'stylesheets/CommonStyleSheet.css']
+        return ()
 
     class MainControl(PageControls.PageControl):
         """

@@ -34,8 +34,9 @@ class RequestHandler(object):
     """
     grabFields = () # fields not part of this controller which will be passed in when this controller is requested
     grabForms = () # forms not part of this controller which will be passed in when this controller is requested
-    sharedFields = ()  # fields that are part of this controller & will be passed into all childHandlers when requested
-    sharedForms = () # forms that are part of this controller  & will be passed into all childHandlers when requested
+    sharedFields = ()  # fields that are part of this controller & will be passed into all childHandlers
+    sharedForms = () # forms that are part of this controller  & will be passed into all childHandlers
+    resourceFiles = () # defines the resource files that must be loaded with this control
 
     def __init__(self, parentHandler=None, initScripts=None):
         self.parentHandler = parentHandler
@@ -63,6 +64,8 @@ class RequestHandler(object):
 
         if not parentHandler:
             for handler in self.allHandlers():
+                if handler != self:
+                    self.resourceFiles += handler.resourceFiles
                 handler.makeConnections()
 
             for handler in self.childHandlers.values():

@@ -81,7 +81,7 @@ class PageControl(RequestHandler, WebElement):
 
             layout = self.addChildElement(Horizontal())
             layout.addClass("WContent")
-            layout.addChildElement(Image(src=Base.IMAGES_URL + "throbber.gif"))
+            layout.addChildElement(Image(src="images/throbber.gif"))
             label = layout.addChildElement(Label())
             label.setText(self.parent.loadingText())
 

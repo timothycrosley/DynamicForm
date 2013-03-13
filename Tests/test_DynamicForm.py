@@ -51,9 +51,8 @@ class TestDynamicForm(object):
         assert self.testForm.favicon(blankRequest) in self.testForm.renderResponse(blankRequest)
 
     def test_resourceFiles(self):
-        assert self.testForm.resourceFiles(blankRequest) == ['javascript/CommonJavascript.js',
-                                                             'stylesheets/CommonStyleSheet.css']
-        for resource in self.testForm.resourceFiles(blankRequest):
+        assert self.testForm.resourceFiles == ('js/WebBot.js', 'stylesheets/Site.css')
+        for resource in self.testForm.resourceFiles:
             assert resource in self.testForm.renderResponse(blankRequest)
 
     def test_renderResponse(self):
