@@ -29,7 +29,6 @@ from WebElements.HiddenInputs import HiddenValue
 from . import PageControls
 from .RequestHandler import RequestHandler
 from WebElements.Resources import ResourceFile, ScriptContainer
-from WebElements.Base import Settings
 
 try:
     from django.core.context_processors import csrf
@@ -57,9 +56,9 @@ class DynamicForm(RequestHandler):
         request.response.scripts.addScript("\n".join(self.initScripts))
         document.setScriptContainer(request.response.scripts)
         document.setProperty('title', self.title(request))
-        document.addChildElement(ResourceFile()).setProperty("file", Settings.STATIC_URL + self.favicon(request))
+        document.addChildElement(ResourceFile()).setProperty("file", self.favicon(request))
         for resourceFile in set(self.requestResourceFiles(request) + self.resourceFiles):
-            document.addChildElement(ResourceFile()).setProperty("file", Settings.STATIC_URL + resourceFile)
+            document.addChildElement(ResourceFile()).setProperty("file", resourceFile)
 
         if csrf:
             token = document.body.addChildElement(HiddenValue('csrfmiddlewaretoken'))
