@@ -42,6 +42,7 @@ class PageControl(RequestHandler, WebElement):
     tagName = "section"
     autoLoad = True
     autoReload = False
+    silentReload = True
     elementFactory = Factory
 
     class ClientSide(WebElement.ClientSide):
@@ -139,6 +140,33 @@ class PageControl(RequestHandler, WebElement):
         """
         return RequestHandler.__str__(self)
 
+    def renderResponse(self, request):
+        ui = self.buildUI(request)
+        self.initUI(ui, request)
+        if self.autoReload:
+            ui.clientSide(self.clientSide.get(silent=self.silentReload, timeout=self.autoReload))
+
+        if request.method == "GET" and self.validGet(ui, request):
+            self.processGet(ui, request)
+        elif request.method == "POST" and self.validPost(ui, request):
+            self.processPost(ui, request)
+        elif request.method == "DELETE" and self.validDelete(ui, request):
+            self.processDelete(ui, request)
+        elif request.method == "PUT" and self.validPut(ui, request):
+            self.processPut(ui, request)
+
+        self.setUIData(ui, request)
+        if not self.canEdit(request):
+            ui.setEditable(False)
+        if not request.response.scripts:
+            request.response.scripts = ScriptContainer()
+            ui.setScriptContainer(request.response.scripts)
+            return ui.toHTML(request=request) + request.response.scripts.toHTML(request=request)
+        else:
+            ui.setScriptContainer(request.response.scripts)
+            return ui.toHTML(request=request)
+
+
 
 class ElementControl(PageControl):
     """
@@ -206,30 +234,6 @@ class ElementControl(PageControl):
             Override to define the processing specific to a put
         """
         pass
-
-    def renderResponse(self, request):
-        ui = self.buildUI(request)
-        self.initUI(ui, request)
-
-        if request.method == "GET" and self.validGet(ui, request):
-            self.processGet(ui, request)
-        elif request.method == "POST" and self.validPost(ui, request):
-            self.processPost(ui, request)
-        elif request.method == "DELETE" and self.validDelete(ui, request):
-            self.processDelete(ui, request)
-        elif request.method == "PUT" and self.validPut(ui, request):
-            self.processPut(ui, request)
-
-        self.setUIData(ui, request)
-        if not self.canEdit(request):
-            ui.setEditable(False)
-        if not request.response.scripts:
-            request.response.scripts = ScriptContainer()
-            ui.setScriptContainer(request.response.scripts)
-            return ui.toHTML(request=request) + request.response.scripts.toHTML(request=request)
-        else:
-            ui.setScriptContainer(request.response.scripts)
-            return ui.toHTML(request=request)
 
 
 class TemplateControl(ElementControl):

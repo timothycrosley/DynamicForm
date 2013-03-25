@@ -82,6 +82,14 @@ class RequestHandler(object):
                issubclass(attribute, RequestHandler) and not attribute.__name__.startswith("Abstract"):
                 self.registerControl(attribute)
 
+        # Connect sibling handlers so they can communicate with each-other easily
+        for childHandlerName, childHandler in self.childHandlers.iteritems():
+            for siblingName, siblingHandler in self.childHandlers.iteritems():
+                if childHandlerName == siblingName:
+                    continue
+
+                childHandler.__setattr__(siblingHandler.baseName, siblingHandler)
+
     def registerControl(self, controlClass):
         """
             Registers a control, returning the registered instance
