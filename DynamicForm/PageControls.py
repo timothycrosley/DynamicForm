@@ -21,6 +21,7 @@
 '''
 
 import re
+import copy
 
 from . import HTTP
 from .RequestHandler import RequestHandler
@@ -86,17 +87,32 @@ class PageControl(RequestHandler, WebElement):
             label = layout.addChildElement(Label())
             label.setText(self.parent.loadingText())
 
-    def __init__(self, id=None, name=None, parent=None, parentHandler=None, initScripts=None, **kwargs):
+    def __init__(self, id=None, name=None, parent=None, parentHandler=None, initScripts=None, request=None,
+                 **kwargs):
         if parentHandler:
             self.elementFactory = parentHandler.elementFactory
 
         RequestHandler.__init__(self, parentHandler=parentHandler, initScripts=initScripts)
         WebElement.__init__(self, id=id or self.accessor, name=name, parent=None, **kwargs)
         self.attributes['handler'] = self.accessor
+        self.request = request
 
         self._loading = self.Loading(self.id + ":Loading", self.name + ":Loading", parent=self, hide=True).toHTML()
 
         self.initScripts.append(self.setScriptContainer(ScriptContainer()).content())
+
+    def __call__(self, id, request, fields=None, method="GET", **kwargs):
+        """
+            Call this to create a new instance of the page control - passing in a unique id
+            and optionally a request or a dictionary of request fields
+        """
+        request = copy.copy(request)
+        request.method = method
+        if fields:
+            request.fields = HTTP.FieldDict(request.fields.copy())
+            request.fields.update(fields)
+
+        return self.__class__(id=id, request=request, parentHandler=self.parentHandler, **kwargs)
 
     def loadingText(self):
         """
@@ -122,6 +138,12 @@ class PageControl(RequestHandler, WebElement):
 
         return element
 
+    def buildTemplate(self, template):
+        """
+            Creates a WebElement from a template based on the pageControl's element factory
+        """
+        return TemplateElement(template=template, factory=self.elementFactory)
+
     def content(self, formatted=False, request=None, *args, **kwargs):
         """
             Overrides the WebElement content to include an initial response if autoLoad is set to true
@@ -141,6 +163,8 @@ class PageControl(RequestHandler, WebElement):
         return RequestHandler.__str__(self)
 
     def renderResponse(self, request):
+        request = self.request or request
+
         ui = self.buildUI(request)
         self.initUI(ui, request)
         if self.autoReload:

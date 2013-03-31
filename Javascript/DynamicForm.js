@@ -144,6 +144,7 @@ DynamicForm.abortLoading = function(view)
     {
         if(DynamicForm.loading[view].abort)
         {
+            DynamicForm.loading[view].onreadystatechange = function(){};
             DynamicForm.loading[view].abort();
         }
     }
@@ -237,10 +238,11 @@ DynamicForm._applyUpdates = function(xmlhttp, pageControls)
     {
         var pageControl = pageControls[currentPageControl];
         var response = responses[currentPageControl];
-        pageControl.innerHTML = response.responseText;
 
-        WebElements.show(pageControl);
         DynamicForm.loading[pageControl.id] = null;
+        pageControl.innerHTML = response.responseText;
+        WebElements.show(pageControl);
+
         WebElements.hide(pageControl.id + ':Loading');
 
         WebElements.forEach(pageControl.getElementsByTagName('script'), function(scr){

@@ -60,13 +60,14 @@ class RequestHandler(object):
         self.initScripts.append("DynamicForm.handlers['%s'].grabForms = %s;" %
                                 (self.accessor, json.dumps(list(self.grabForms))))
 
+        self.makeConnections()
         self._registerChildren()
 
         if not parentHandler:
             for handler in self.allHandlers():
+                handler.rootHandler = self
                 if handler != self:
                     self.resourceFiles += handler.resourceFiles
-                handler.makeConnections()
 
             for handler in self.childHandlers.values():
                 for name, value in iteritems(self.childHandlers):
