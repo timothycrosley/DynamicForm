@@ -114,7 +114,7 @@ DynamicForm.serializeControl = function(pageControl)
 }
 
 // Quickly and efficiently serializes one or more controls returning a string representation
-DynamicForm.serializeControls = function(pageControls)
+DynamicForm.serializeControls = function(pageControls, fresh)
 {
     var pageControls = WebElements.map(pageControls, WebElements.get);
     var fields = Array();
@@ -131,7 +131,10 @@ DynamicForm.serializeControls = function(pageControls)
                                 fields = fields.concat(WebElements.getElementsByTagNames(WebElements.Settings.Serialize,
                                                                                         form, true));
                             });
-        fields = fields.concat(WebElements.getElementsByTagNames(WebElements.Settings.Serialize, pageControl, true));
+        if(!fresh)
+        {
+            fields = fields.concat(WebElements.getElementsByTagNames(WebElements.Settings.Serialize, pageControl, true));
+        }
         serializedHandlers.push("requestHandler=" + requestHandler);
     }
     return serializedHandlers.concat([WebElements.serializeElements(WebElements.sortUnique(fields))]).join("&");
@@ -151,7 +154,7 @@ DynamicForm.abortLoading = function(view)
 }
 
 // Requests one or many controls on a page
-DynamicForm._requestPageControls = function(pageControls, method, silent, params, timeout)
+DynamicForm._requestPageControls = function(pageControls, method, silent, params, timeout, fresh)
 {
     if(typeof(pageControls) != typeof([]))
     {
@@ -175,7 +178,7 @@ DynamicForm._requestPageControls = function(pageControls, method, silent, params
         return;
     }
 
-    var params = [DynamicForm.serializeControls(pageControls), params].join("&");
+    var params = [DynamicForm.serializeControls(pageControls, fresh), params].join("&");
     if(!silent)
     {
         for(currentPageControl = 0; currentPageControl < pageControls.length; currentPageControl++)
@@ -258,25 +261,25 @@ DynamicForm._applyUpdates = function(xmlhttp, pageControls)
 }
 
 // Asks the server to provide a new version of the control
-DynamicForm.get = function(pageControl, silent, params, timeout)
+DynamicForm.get = function(pageControl, silent, params, timeout, fresh)
 {
-    return DynamicForm._requestPageControls(pageControl, "GET", silent, params, timeout);
+    return DynamicForm._requestPageControls(pageControl, "GET", silent, params, timeout, fresh);
 }
 
 // Posts the current version of the control to the server for it to respond
-DynamicForm.post = function(pageControl, silent, params, timeout)
+DynamicForm.post = function(pageControl, silent, params, timeout, fresh)
 {
-    return DynamicForm._requestPageControls(pageControl, "POST", silent, params, timeout);
+    return DynamicForm._requestPageControls(pageControl, "POST", silent, params, timeout, fresh);
 }
 
 // Puts the current version of the control to the server for it to respond
-DynamicForm.put = function(pageControl, silent, params, timeout)
+DynamicForm.put = function(pageControl, silent, params, timeout, fresh)
 {
-    return DynamicForm._requestPageControls(pageControl, "PUT", silent, params, timeout);
+    return DynamicForm._requestPageControls(pageControl, "PUT", silent, params, timeout, fresh);
 }
 
 // Request a delete of the current version of the control for the server to respond to
-DynamicForm.delete = function(pageControl, silent, params, timeout)
+DynamicForm.delete = function(pageControl, silent, params, timeout, fresh)
 {
-    return DynamicForm._requestPageControls(pageControl, "DELETE", silent, params, timeout);
+    return DynamicForm._requestPageControls(pageControl, "DELETE", silent, params, timeout, fresh);
 }

@@ -32,7 +32,9 @@ from WebElements.Base import WebElement, TemplateElement
 from WebElements.Layout import Center, Horizontal, Flow
 from WebElements.Display import Image, Label, FormError
 from WebElements.Resources import ScriptContainer
+from WebElements.StringUtils import scriptURL
 from WebElements import ClientSide
+
 
 class PageControl(RequestHandler, WebElement):
     """
@@ -48,29 +50,29 @@ class PageControl(RequestHandler, WebElement):
 
     class ClientSide(WebElement.ClientSide):
 
-        def getAll(self, controls, silent=False, params=None, timeout=None):
-            return ClientSide.call("DynamicForm.get", controls, silent, params, timeout)
+        def getAll(self, controls, silent=False, timeout=None, fresh=True, **kwargs):
+            return ClientSide.call("DynamicForm.get", controls, silent, scriptURL(kwargs), timeout, fresh)
 
-        def get(self, silent=False, params=None, timeout=None):
-            return ClientSide.call("DynamicForm.get", self, silent, params, timeout)
+        def get(self, silent=False, timeout=None, fresh=True, **kwargs):
+            return ClientSide.call("DynamicForm.get", self, silent, scriptURL(kwargs), timeout, fresh)
 
-        def postAll(self, controls, silent=False, params=None, timeout=None):
-            return ClientSide.call("DynamicForm.post", controls, silent, params, timeout)
+        def postAll(self, controls, silent=False, fresh=False, timeout=None, **kwargs):
+            return ClientSide.call("DynamicForm.post", controls, silent, scriptURL(kwargs), timeout, fresh)
 
-        def post(self, silent=False, params=None, timeout=None):
-            return ClientSide.call("DynamicForm.post", self, silent, params, timeout)
+        def post(self, silent=False, timeout=None, fresh=False, **kwargs):
+            return ClientSide.call("DynamicForm.post", self, silent, scriptURL(kwargs), timeout, fresh)
 
-        def putAll(self, controls, silent=False, params=None, timeout=None):
-            return ClientSide.call("DynamicForm.put", controls, silent, params, timeout)
+        def putAll(self, controls, silent=False, fresh=False, timeout=None):
+            return ClientSide.call("DynamicForm.put", controls, silent, scriptURL(kwargs), timeout, fresh)
 
-        def put(self, silent=False, params=None, timeout=None):
-            return ClientSide.call("DynamicForm.put", self, silent, params, timeout)
+        def put(self, silent=False, timeout=None, fresh=False, **kwargs):
+            return ClientSide.call("DynamicForm.put", self, silent, scriptURL(kwargs), timeout, fresh)
 
-        def delteAll(self, controls, silent=False, params=None, timeout=None):
-            return ClientSide.call("DynamicForm.get", controls, silent, params, timeout)
+        def delteAll(self, controls, silent=False, fresh=False, timeout=None, **kwargs):
+            return ClientSide.call("DynamicForm.get", controls, silent, scriptURL(kwargs), timeout, fresh)
 
-        def delete(self, silent=False, params=None, timeout=None):
-            return ClientSide.call("DynamicForm.delete", self, silent, params, timeout)
+        def delete(self, silent=False, timeout=None, fresh=False, **kwargs):
+            return ClientSide.call("DynamicForm.delete", self, silent, scriptURL(kwargs), timeout, fresh)
 
     class Loading(Center):
         """
@@ -85,7 +87,7 @@ class PageControl(RequestHandler, WebElement):
             layout.addClass("WContent")
             layout.addChildElement(Image(src="images/throbber.gif"))
             label = layout.addChildElement(Label())
-            label.setText(self.parent.loadingText())
+            label.setText(self.parent.loadingText)
 
     def __init__(self, id=None, name=None, parent=None, parentHandler=None, initScripts=None, request=None,
                  **kwargs):
@@ -114,11 +116,12 @@ class PageControl(RequestHandler, WebElement):
 
         return self.__class__(id=id, request=request, parentHandler=self.parentHandler, **kwargs)
 
+    @property
     def loadingText(self):
         """
             Defines the default text to display while this controller is loading
         """
-        return "Loading %s..." % (str(self), )
+        return "Loading %s..." % (self.__class__.__name__, )
 
     def toHTML(self, formatted=False, *args, **kwargs):
         """
@@ -126,15 +129,15 @@ class PageControl(RequestHandler, WebElement):
         """
         return "".join([self._loading, WebElement.toHTML(self, formatted, *args, **kwargs)])
 
-    def buildElement(self, className, id=None, name=None, parent=None, properties=None, scriptContainer=None):
+    def buildElement(self, className, id=None, name=None, parent=None, scriptContainer=None, **kwargs):
         """
             Builds a WebElement using the factory attached to this controller
         """
         element = self.elementFactory.build(className, id, name, parent)
         if scriptContainer != None:
             element.setScriptContainer(scriptContainer)
-        if properties:
-            element.setProperties(properties)
+        if kwargs:
+            element.setProperties(kwargs)
 
         return element
 
