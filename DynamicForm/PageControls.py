@@ -33,6 +33,7 @@ from WebElements.Layout import Center, Horizontal, Flow
 from WebElements.Display import Image, Label, FormError
 from WebElements.Resources import ScriptContainer
 from WebElements.StringUtils import scriptURL
+from WebElements.Containers import PageControlPlacement
 from WebElements import ClientSide
 
 
@@ -42,7 +43,7 @@ class PageControl(RequestHandler, WebElement):
     """
     properties = WebElement.properties.copy()
     properties['autoLoad'] = {'action':'classAttribute', 'type':'bool'}
-    tagName = "section"
+    tagName = "div"
     autoLoad = True
     autoReload = False
     silentReload = True
@@ -50,29 +51,33 @@ class PageControl(RequestHandler, WebElement):
 
     class ClientSide(WebElement.ClientSide):
 
-        def getAll(self, controls, silent=False, timeout=None, fresh=True, **kwargs):
-            return ClientSide.call("DynamicForm.get", controls, silent, scriptURL(kwargs), timeout, fresh)
+        def get(self, silent=False, timeout=None, fresh=True, params=None, **kwargs):
+            return ClientSide.call("DynamicForm.get", self, silent, params or scriptURL(kwargs), timeout, fresh)
 
-        def get(self, silent=False, timeout=None, fresh=True, **kwargs):
-            return ClientSide.call("DynamicForm.get", self, silent, scriptURL(kwargs), timeout, fresh)
+        def getAll(self, controls, silent=False, timeout=None, fresh=True, params=None, **kwargs):
+            return ClientSide.call("DynamicForm.get", controls, silent, params or scriptURL(kwargs), timeout, fresh)
 
-        def postAll(self, controls, silent=False, fresh=False, timeout=None, **kwargs):
-            return ClientSide.call("DynamicForm.post", controls, silent, scriptURL(kwargs), timeout, fresh)
+        def postAll(self, controls, silent=False, timeout=None, fresh=False, params=None, **kwargs):
+            return ClientSide.call("DynamicForm.post", controls, silent, params or scriptURL(kwargs), timeout,
+                                   fresh)
 
-        def post(self, silent=False, timeout=None, fresh=False, **kwargs):
-            return ClientSide.call("DynamicForm.post", self, silent, scriptURL(kwargs), timeout, fresh)
+        def post(self, silent=False, timeout=None, fresh=False, params=None, **kwargs):
+            return ClientSide.call("DynamicForm.post", self, silent, params or scriptURL(kwargs), timeout, fresh)
 
-        def putAll(self, controls, silent=False, fresh=False, timeout=None):
-            return ClientSide.call("DynamicForm.put", controls, silent, scriptURL(kwargs), timeout, fresh)
+        def putAll(self, controls, silent=False, timeout=None, fresh=False, params=None, **kwargs):
+            return ClientSide.call("DynamicForm.put", controls, silent, params or scriptURL(kwargs), timeout, fresh)
 
-        def put(self, silent=False, timeout=None, fresh=False, **kwargs):
-            return ClientSide.call("DynamicForm.put", self, silent, scriptURL(kwargs), timeout, fresh)
+        def put(self, silent=False, timeout=None, fresh=False, params=None, **kwargs):
+            return ClientSide.call("DynamicForm.put", self, silent, params or scriptURL(kwargs), timeout, fresh)
 
-        def delteAll(self, controls, silent=False, fresh=False, timeout=None, **kwargs):
-            return ClientSide.call("DynamicForm.get", controls, silent, scriptURL(kwargs), timeout, fresh)
+        def delteAll(self, controls, silent=False, timeout=None, fresh=False, params=None, **kwargs):
+            return ClientSide.call("DynamicForm.DELETE", controls, silent, params or scriptURL(kwargs), timeout, fresh)
 
-        def delete(self, silent=False, timeout=None, fresh=False, **kwargs):
-            return ClientSide.call("DynamicForm.delete", self, silent, scriptURL(kwargs), timeout, fresh)
+        def delete(self, silent=False, timeout=None, fresh=False, params=None, **kwargs):
+            return ClientSide.call("DynamicForm.DELETE", self, silent, params or scriptURL(kwargs), timeout, fresh)
+
+        def move(self, to, makeTop=False):
+            return ClientSide.move(self.id + ":Loading", to, makeTop)(WebElement.ClientSide.move(self, to, makeTop))
 
     class Loading(Center):
         """
@@ -96,6 +101,7 @@ class PageControl(RequestHandler, WebElement):
 
         RequestHandler.__init__(self, parentHandler=parentHandler, initScripts=initScripts)
         WebElement.__init__(self, id=id or self.accessor, name=name, parent=None, **kwargs)
+        self.setPrefix("")
         self.attributes['handler'] = self.accessor
         self.request = request
 
@@ -103,18 +109,33 @@ class PageControl(RequestHandler, WebElement):
 
         self.initScripts.append(self.setScriptContainer(ScriptContainer()).content())
 
-    def __call__(self, id, request, fields=None, method="GET", **kwargs):
+    def __call__(self, id, request, method="GET", autoLoad=None, autoReload=None, silentReload=None, **kwargs):
         """
             Call this to create a new instance of the page control - passing in a unique id
             and optionally a request or a dictionary of request fields
         """
         request = copy.copy(request)
         request.method = method
-        if fields:
+        if kwargs:
             request.fields = HTTP.FieldDict(request.fields.copy())
-            request.fields.update(fields)
+            request.fields.update(kwargs)
 
-        return self.__class__(id=id, request=request, parentHandler=self.parentHandler, **kwargs)
+        id = self.accessor + str(id)
+        request.fields['requestID'] = id
+        instance = self.__class__(id=id, request=request, parentHandler=self.parentHandler)
+        if autoLoad is not None:
+            instance.autoLoad = autoLoad
+        if autoReload is not None:
+            instance.autoReload = autoReload
+        if silentReload is not None:
+            instance.silentReload = silentReload
+        return instance
+
+    def instanceID(self, salt="", element=""):
+        """
+            Returns what the instance ID would be for this controller or sub element given the provided salt value
+        """
+        return self.accessor + str(salt) + str(element)
 
     @property
     def loadingText(self):
@@ -168,8 +189,17 @@ class PageControl(RequestHandler, WebElement):
     def renderResponse(self, request):
         request = self.request or request
 
+        requestID = request.fields.get('requestID')
+        if requestID:
+            self.id = requestID
+        else:
+            self.id = self.accessor
+
         ui = self.buildUI(request)
         self.initUI(ui, request)
+        self._modifyUI(ui, request)
+        if request.method != "GET":
+            self.populateUI(ui, request)
         if self.autoReload:
             ui.clientSide(self.clientSide.get(silent=self.silentReload, timeout=self.autoReload))
 
@@ -193,6 +223,8 @@ class PageControl(RequestHandler, WebElement):
             ui.setScriptContainer(request.response.scripts)
             return ui.toHTML(request=request)
 
+    def _modifyUI(self, ui, request):
+        pass
 
 
 class ElementControl(PageControl):
@@ -203,16 +235,32 @@ class ElementControl(PageControl):
         return Flow()
 
     def initUI(self, ui, request):
+        """
+            Adds all UI data that is needed independent of how the control processing goes
+        """
         return
 
+    def populateUI(self, ui, request):
+        """
+            Populates the UI with data from the request before processing begins, by default only done
+            on none GET methods
+        """
+        ui.insertVariables(copy.deepcopy(request.fields))
+
     def setUIData(self, ui, request):
+        """
+            Sets the final UI data before rendering the UI and returning client-side
+        """
         return
 
     def valid(self, ui, request):
         """
             The default validation method for all non get requests if validate(requestType) is not defined
         """
-        return True
+        if not request.method == "GET":
+            return not ui.errors()
+        else:
+            return True
 
     def validPost(self, ui, request):
         """
@@ -272,12 +320,47 @@ class TemplateControl(ElementControl):
 
     def __init__(self, id=None, name=None, parent=None, parentHandler=None, initScripts=None, **kwargs):
         ElementControl.__init__(self, id, name, parent, parentHandler, initScripts, **kwargs)
+        self.autoRegister = []
 
+    def _postConnections(self):
+        """
+            After all connections are made we automatically cache replacement actions where possible.
+        """
         templateDefinition = TemplateElement(template=self.template, factory=self.elementFactory)
-
         for control in templateDefinition.allChildren():
             if isinstance(control, PageControl):
                 self.registerControl(control.__class__)
+            if isinstance(control, PageControlPlacement):
+                self.autoRegister.append((control.id, self._findRelativeControl(control.control)))
+
+    def _findRelativeControl(self, name):
+        control = self
+        if name.startswith(".."):
+            control = control.parentHandler
+            name = name[2:]
+            while name.startswith("."):
+                startFrom = control.parentHandler
+                name = name[1:]
+
+        for controlName in name.split("."):
+            control = getattr(control, controlName)
+
+        return control
 
     def buildUI(self, request):
+        """
+            Builds an instance of the defined template
+        """
         return TemplateElement(template=self.template, factory=self.elementFactory)
+
+    def _modifyUI(self, ui, request):
+        """
+            Automatically replaces any defined controls that exist on the template.
+        """
+        for controlAccessor, control in self.autoRegister:
+            placement = getattr(ui, controlAccessor)
+            if not placement or not placement.parent:
+                continue
+
+            placement.replaceWith(control)
+

@@ -331,7 +331,6 @@ class Request(object):
     """
         Defines the abstract concept of an HTTP request
     """
-    __slots__ = ('fields', 'body', 'cookies', 'meta', 'files', 'path', 'method', 'data', 'native', 'user', 'response')
 
     def __init__(self, fields=None, body="", cookies=None, meta=None, files=None, path=None, method=None, user=None,
                  native=None):

@@ -90,6 +90,10 @@ class RequestHandler(object):
                     continue
 
                 childHandler.__setattr__(siblingHandler.baseName, siblingHandler)
+            childHandler._postConnections()
+
+    def _postConnections(self):
+        pass
 
     def registerControl(self, controlClass):
         """
@@ -99,6 +103,16 @@ class RequestHandler(object):
         self.childHandlers[instance.baseName] = instance
         self.__setattr__(instance.baseName, instance)
         return instance
+
+    def up(self, levels=1):
+        """
+            Travels up the request handler tree the requested number of levels
+            (equivalent to doing .parentHandler for each level)
+        """
+        handler = self
+        for level in xrange(levels):
+            handler = handler.parentHandler
+        return handler
 
     @classmethod
     def djangoView(cls):

@@ -102,7 +102,7 @@ DynamicForm.serializeControl = function(pageControl)
 {
     var fields = Array();
     var pageControl = WebElements.get(pageControl);
-    var requestHandler = pageControl.attributes.handler.value;
+    var requestHandler = pageControl.getAttribute('handler');
 
     fields = fields.concat(WebElements.forEach(DynamicForm.handlers[requestHandler].grabFields, WebElements.get) || []);
     WebElements.forEach(DynamicForm.handlers[requestHandler].grabForms,
@@ -129,7 +129,7 @@ DynamicForm.abortLoading = function(view)
 DynamicForm._requestPageControl = function(pageControl, method, silent, params, timeout)
 {
     var pageControl = WebElements.get(pageControl);
-    var requestHandler = pageControl.attributes.handler.value;
+    var requestHandler = pageControl.getAttribute('handler');
     if(!method){method = "GET";}
     if(!params){params = '';}
 

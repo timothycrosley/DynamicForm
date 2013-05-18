@@ -95,7 +95,7 @@ RestClient.put = function(url, params, callbackFunction)
 }
 
 // Makes a DELETE rest call against the provided URL
-RestClient.delete = function(url, params, callbackFunction)
+RestClient.DELETE = function(url, params, callbackFunction)
 {
     return RestClient.makeRequest(url, "DELETE", params, callbackFunction);
 }
@@ -123,7 +123,7 @@ DynamicForm.serializeControls = function(pageControls, fresh)
     for(currentPageControl = 0; currentPageControl < pageControls.length; currentPageControl++)
     {
         var pageControl = pageControls[currentPageControl];
-        var requestHandler = pageControl.attributes.handler.value;
+        var requestHandler = pageControl.getAttribute('handler');
         fields = fields.concat(WebElements.map(DynamicForm.handlers[requestHandler].grabFields, WebElements.get) || []);
         WebElements.map(DynamicForm.handlers[requestHandler].grabForms,
                             function(form)
@@ -136,6 +136,10 @@ DynamicForm.serializeControls = function(pageControls, fresh)
             fields = fields.concat(WebElements.getElementsByTagNames(WebElements.Settings.Serialize, pageControl, true));
         }
         serializedHandlers.push("requestHandler=" + requestHandler);
+        if(pageControl.id != requestHandler)
+        {
+                serializedHandlers.push("requestID=" + pageControl.id);
+        }
     }
     return serializedHandlers.concat([WebElements.serializeElements(WebElements.sortUnique(fields))]).join("&");
 }
@@ -172,7 +176,7 @@ DynamicForm._requestPageControls = function(pageControls, method, silent, params
     if(timeout)
     {
         timeoutMethod = setTimeout("DynamicForm." + method.toLowerCase() + "([" + pageControlIds + "], " + silent +
-                                   ", '" + params + "');", timeout);
+                                   ", '" + params + "', null, " + fresh + ");", timeout);
         DynamicForm.loading[pageControlName] = {'timeout':timeoutMethod,
                                     'abort':function(){clearTimeout(DynamicForm.loading[pageControlName]['timeout']);}};
         return;
@@ -279,7 +283,7 @@ DynamicForm.put = function(pageControl, silent, params, timeout, fresh)
 }
 
 // Request a delete of the current version of the control for the server to respond to
-DynamicForm.delete = function(pageControl, silent, params, timeout, fresh)
+DynamicForm.DELETE = function(pageControl, silent, params, timeout, fresh)
 {
     return DynamicForm._requestPageControls(pageControl, "DELETE", silent, params, timeout, fresh);
 }
